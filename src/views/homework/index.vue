@@ -41,10 +41,14 @@
               <div class="seat-rating h-100 d-flex align-items-center">
                 <div style="display: flex; align-items: center" @click="lookDetail(course)">
                   <i class="el-icon-view" style="color: #3762f0; font-size: 20px"></i>
-                  <span style="color: #3762f0; font-size: 14px">查看作业信息</span>
+                  <span style="color: #3762f0; font-size: 14px">查看作业</span>
+                </div>
+                <div style="display: flex; align-items: center" @click="lookSubmitDetail(course)" v-show="course.status=='1'">
+                  <i class="el-icon-view" style="color: #3762f0; font-size: 20px"></i>
+                  <span style="color: #3762f0; font-size: 14px">提交详情</span>
                 </div>
               </div>
-              <div :class="course.chargeType === 0 ? 'course-fee h-100' : 'course-charge h-100'
+              <div v-show="course.status=='0'" :class="course.chargeType === 0 ? 'course-fee h-100' : 'course-charge h-100'
           ">
                 <a href="#" @click="openUploadDialog(course)">提交作业</a>
               </div>
@@ -62,30 +66,53 @@
     </div>
     <HomeworkModal :initialData="currentData" :visible="showModal" ref="homeworkRef"></HomeworkModal>
     <el-dialog title="提交作业" :visible.sync="uploadDialogVisible" width="30%">
-      <el-upload class="upload-demo" :action="UploadUrl" :on-preview="handlePreview"
-        :on-remove="handleRemove" :file-list="fileList" list-type="picture">
-        <el-button size="small" type="primary">点击上传</el-button>
-        <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
-      </el-upload>100%" :src="dialogImageUrl" alt="" />
-    </el-dialog>
-    <span slot="footer" class="dialog-footer">
-      <el-button @click="uploadDialogVisible = false">取 消</el-button>
-      <el-button type="primary" @click="submitWork">提 交</el-button>
-    </span>
+      <el-upload ref="upload" action="string" :file-list="fileList" :http-request="handleUpload"
+        :on-preview="handlePreview" :on-remove="handleRemove" list-type="picture-card" :disabled="isRead">
+        <i class="el-icon-plus"></i>
+        <!-- <el-button slot="trigger" size="small" type="primary">选取文件</el-button> -->
+      </el-upload>
+      <el-dialog :visible.sync="dialogVisible" append-to-body>
+        <img width="100%" :src="dialogImageUrl" alt="">
+      </el-dialog>
+      <!-- <el-upload action="https://jsonplaceholder.typicode.com/posts/" list-type="picture-card"
+        :on-preview="handlePictureCardPreview" :on-remove="handleRemove">
+        <i class="el-icon-plus"></i>
+      </el-upload>
+      <el-dialog :visible.sync="dialogVisible">
+        <img width="100%" :src="dialogImageUrl" alt="">
+      </el-dialog> -->
+      <span slot="footer" class="dialog-footer" v-show="!isRead">
+        <el-button @click="uploadDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="submitWork">提 交</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
 <script>
-import { homeworkList } from "@/api/homework/index";
+import { homeworkList,homeworkSaveOrUpdate } from "@/api/homework/index";
 import { messageWarn, notifyFail } from "@/utils/util";
 import HomeworkModal from "./homeworkModal.vue";
-import {UploadUrl} from '@/api/upload-data'
+import { uploadData } from '@/api/upload-data'
 export default {
   components: { HomeworkModal },
   name: "HomeworkIndex",
+  watch:
+  {
+    uploadDialogVisible:{
+      handler(val)
+      {
+        if(!val)
+        {
+          this.fileList = []
+        }
+      }
+    }
+  },
   data() {
     return {
       showModal: false,
+      dialogVisible: false,
+      dialogImageUrl: '',
       currentData: {},
       total: 0,
       loading: true,
@@ -97,8 +124,9 @@ export default {
         grade: null,
         title: null,
       },
+      isRead:false,
       list: [],
-      fileList:[],
+      fileList: [],
       uploadDialogVisible: false, // 控制上传对话框的显示状态
       uploadedFiles: [], // 存储已上传的文件
     };
@@ -205,7 +233,36 @@ export default {
       this.currentData = newData;
       this.$refs.homeworkRef.initData(newData);
     },
+    lookSubmitDetail(data)
+    {
+      this.showModal=false
+      if(data.status!="1")
+      {
+        this.$message({
+          message: this.$t("作业未提交,不能查看"),
+          type: "warning",
+        });
+        return;
+      }
+      this.isRead=true
+      let remark=''
+      try {
+        remark=JSON.parse(data.remark)
+      } catch (error) {     
+      }
+      this.fileList=remark.flies
+      this.uploadDialogVisible=true
+    },
     openUploadDialog(data) {
+      this.isRead=false
+      if(data.status=="1")
+      {
+        this.$message({
+          message: this.$t("作业已提交,不能重复提交"),
+          type: "warning",
+        });
+        return;
+      }
       this.showModal = false; // 关闭弹窗
       this.uploadDialogVisible = true; // 显示上传对话框
       this.currentData = data; // 传递当前数据
@@ -223,17 +280,43 @@ export default {
     },
     submitWork() {
       // 提交作业的逻辑
-      console.log("this.uploadFiles", this.uploadedFiles);
       let resData = { ...this.currentData };
       let remark = JSON.parse(resData.remark); // 将 remark 解析为对象
-      remark.flies = this.uploadedFiles; // 将上传的文件添加到 remark 对象中
+      if(this.fileList.length === 0)
+      {
+        messageWarn(this, this.$t("请上传照片"));
+        return;
+      }
+      remark.flies = this.fileList; // 将上传的文件添加到 remark 对象中
       resData.remark = JSON.stringify(remark);
       resData.status = "1"; // 作业状态为已提交
-      console.log("resData", resData);
-      this.uploadDialogVisible = false; // 关闭对话框
+      console.log('resData', resData)
+      homeworkSaveOrUpdate(resData).then(res=>{
+         this.$message.success('提交成功')
+         this.getList()
+      }).catch(err=>{
+        this.$message.error('提交失败')
+      }).finally(()=>{
+        this.uploadDialogVisible = false; // 关闭对话框
+        this.fileList = []; // 清空上传文件列表
+      })
+     
 
       // 进一步处理提交逻辑
     },
+    handleUpload(file) {
+      const formData = new FormData();
+      formData.append("file", file.file);
+      uploadData(formData).then((resp) => {
+        this.fileList.push(resp.data.result);
+      }).catch((e) => {
+        this.$message.error(e.message);
+      })
+    },
+    handlePreview(file) {
+      this.dialogImageUrl = file.url;
+      this.dialogVisible = true;
+    }
   },
 };
 </script>
