@@ -29,35 +29,29 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="作业日期">
-            <el-date-picker
-              v-model="formData.date"
-              type="datetime"
-              placeholder="选择日期时间"
-              readonly
-            />
+            <el-date-picker v-model="formData.date" type="datetime" placeholder="选择日期时间" readonly />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="截止日期">
-            <el-date-picker
-              v-model="formData.dueDate"
-              type="datetime"
-              placeholder="选择日期时间"
-              readonly
-            />
+            <el-date-picker v-model="formData.dueDate" type="datetime" placeholder="选择日期时间" readonly />
           </el-form-item>
         </el-col>
       </el-row>
-      <el-form-item v-if="formData.imageUrl" label="预览">
-        <el-image
-          style="width: 100px; height: 100px"
-          :src="formData.imageUrl"
-          :preview-src-list="[formData.imageUrl]"
-        >
-        </el-image>
-       
-      </el-form-item>
-
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item v-if="formData.imageUrl" label="预览">
+            <el-image style="width: 100px; height: 100px" :src="formData.imageUrl"
+              :preview-src-list="[formData.imageUrl]">
+            </el-image>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="学生姓名">
+            <el-input v-model="formData.studentName" readonly />
+          </el-form-item>
+        </el-col>
+      </el-row>
       <el-form-item label="作业描述">
         <WangEditor v-model="formData.desc"></WangEditor>
       </el-form-item>
@@ -68,7 +62,7 @@
 <script>
 import WangEditor from '@/components/wangEditor/index.vue'
 export default {
-  components:{
+  components: {
     WangEditor
   },
   props: {

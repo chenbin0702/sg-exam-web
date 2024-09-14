@@ -3,14 +3,41 @@
     <div class="content-container">
       <div class="search-form">
         <el-form ref="examForm" :inline="true" :model="query" label-width="100px" class="examForm">
-          <el-form-item label="课程" prop="courseName">
-            <el-input v-model="query.courseName" autocomplete="off" size="small" />
+          <el-form-item label="类型" prop="type">
+            <el-select v-model="query.type" placeholder="请选择" size="small">
+              <el-option label="学校作业" value="0"></el-option>
+              <el-option label="补习作业" value="1"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="阶段" prop="stage">
+            <el-select v-model="query.stage" placeholder="请选择" size="small" @change="changeStage">
+              <el-option v-for="item in stageOptions" :key="item.value" :label="item.label" :value="item.value">
+              </el-option>
+            </el-select>
           </el-form-item>
           <el-form-item label="年级" prop="grade">
-            <el-input v-model="query.grade" autocomplete="off" size="small" />
+            <el-select v-model="query.grade" placeholder="请选择" size="small" @change="changeGrade">
+              <el-option v-for="item in gradeOptions" :key="item.value" :label="item.label" :value="item.value">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="课程" prop="courseName">
+            <el-select v-model="query.courseName" placeholder="请选择" size="small">
+              <el-option v-for="item in courseOptions" :key="item.value" :label="item.label" :value="item.value">
+              </el-option>
+            </el-select>
           </el-form-item>
           <el-form-item label="作业标题" prop="title">
             <el-input v-model="query.title" autocomplete="off" size="small" />
+          </el-form-item>
+          <el-form-item label="作业时间" prop="date">
+            <el-date-picker v-model="query.date" type="date"  default-time="12:00:00" placeholder="选择日期" size="small" />
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="query.status" size="small">
+              <el-option label="未完成" value="0"></el-option>
+              <el-option label="已完成" value="1"></el-option>
+            </el-select>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="submitForm('examForm')" size="small">{{
@@ -22,36 +49,23 @@
           </el-form-item>
         </el-form>
       </div>
-      <!-- <div class="category-list">
-        <ul>
-          <li :class="query.activeTag === '1' ? 'active' : ''" @click="changeTag('1')">{{$t('exam.courses.all')}}</li>
-          <li :class="query.activeTag === '2' ? 'active' : ''" @click="changeTag('2')">{{$t('exam.courses.latestRelease')}}</li>
-          <li :class="query.activeTag === '3' ? 'active' : ''" @click="changeTag('3')">{{$t('fav.myFavorite')}}</li>
-        </ul>
-      </div> -->
       <div class="course-card-list">
         <transition name="fade-transform" mode="out-in" v-for="course in list" :key="course.id">
           <div class="single-popular-course">
-            <img src="https://img0.baidu.com/it/u=918592680,685611776&fm=253&fmt=auto&app=120&f=JPEG?w=607&h=405"
-              :alt="course.title" />
-            <div class="course-content" style="display: flex; justify-content: center">
-              <h3>{{ course.title }}</h3>
+            <!-- <img src="https://img0.baidu.com/it/u=918592680,685611776&fm=253&fmt=auto&app=120&f=JPEG?w=607&h=405"
+              :alt="course.title" /> -->
+            <div style="display: flex;flex-direction: column;margin:20px">
+              <h3>科目：{{ course.courseName }}</h3>
+              <h3>标题:{{ course.title }}</h3>
+              <h3>布置时间:{{ course.date }}</h3>
+              <h3>完成情况:{{ course.status == '0' ? '未完成' : '已完成' }}</h3>
             </div>
-            <div class="seat-rating-fee d-flex justify-content-between">
-              <div class="seat-rating h-100 d-flex align-items-center">
-                <div style="display: flex; align-items: center" @click="lookDetail(course)">
-                  <i class="el-icon-view" style="color: #3762f0; font-size: 20px"></i>
-                  <span style="color: #3762f0; font-size: 14px">查看作业</span>
-                </div>
-                <div style="display: flex; align-items: center" @click="lookSubmitDetail(course)" v-show="course.status=='1'">
-                  <i class="el-icon-view" style="color: #3762f0; font-size: 20px"></i>
-                  <span style="color: #3762f0; font-size: 14px">提交详情</span>
-                </div>
-              </div>
-              <div v-show="course.status=='0'" :class="course.chargeType === 0 ? 'course-fee h-100' : 'course-charge h-100'
-          ">
-                <a href="#" @click="openUploadDialog(course)">提交作业</a>
-              </div>
+            <div style="display: flex;">
+              <el-button type="primary" @click="lookDetail(course)" icon="el-icon-view" size="small">查看作业</el-button>
+              <el-button type="info" @click="lookSubmitDetail(course)" icon="el-icon-view" size="small"
+                style="margin:auto">提交详情</el-button>
+              <el-button type="success" @click="openUploadDialog(course)" icon="el-icon-upload"
+                size="small">提交作业</el-button>
             </div>
           </div>
         </transition>
@@ -65,22 +79,34 @@
       </el-row>
     </div>
     <HomeworkModal :initialData="currentData" :visible="showModal" ref="homeworkRef"></HomeworkModal>
-    <el-dialog title="提交作业" :visible.sync="uploadDialogVisible" width="30%">
-      <el-upload ref="upload" action="string" :file-list="fileList" :http-request="handleUpload"
-        :on-preview="handlePreview" :on-remove="handleRemove" list-type="picture-card" :disabled="isRead">
-        <i class="el-icon-plus"></i>
-        <!-- <el-button slot="trigger" size="small" type="primary">选取文件</el-button> -->
-      </el-upload>
+    <el-dialog title="提交作业" :visible.sync="uploadDialogVisible" width="50%">
+      <div style="display:flex;gap:20px;align-items:center">
+        <el-upload ref="upload" action="string" :file-list="imageList" :http-request="handleUpload"
+          :on-preview="handlePreview" :on-remove="handleRemove" list-type="picture-card" :disabled="isRead">
+          <i class="el-icon-plus">图片</i>
+          <!-- <el-button slot="trigger" size="small" type="primary">选取文件</el-button> -->
+        </el-upload>
+        <el-upload ref="upload" action="string" :http-request="handleUploadAudio" v-loading="loadingAudio"  :disabled="isRead" :before-upload="beforeUploadAudio"
+        :show-file-list="false">
+          <el-button slot="trigger" size="small" type="primary" :disabled="audioUrl!=''&&isRead">上传语音</el-button>
+          <el-button size="small" type="danger" v-if="audioUrl" @click="handleRemoveAudio" :disabled="isRead">删除</el-button>
+          <div slot="tip" class="el-upload__tip">仅支持 500MB 以内的 mp3 格式文件，不符合要求请下载“格式工厂”软件压缩转码</div>
+          <div class="audio" >
+            <audio class="audio-item" ref="audio" controls :src="audioUrl" />
+          </div>
+        </el-upload>
+        <el-upload ref="upload" action="string" v-loading="loadingVideo" :http-request="handleUploadVideo" :before-upload="beforeUploadVideo"
+            :show-file-list="false">
+          <el-button slot="trigger" size="small" type="primary" :disabled="videoUrl!=''&&isRead">上传视频</el-button>
+          <el-button size="small" type="danger" v-if="videoUrl" @click="handleRemoveVideo" :disabled="isRead">删除</el-button>
+          <video width="100%" controls="controls" :src="videoUrl"></video>
+        </el-upload>
+      </div>
+      <div>作业总结和说明</div>
+      <WangEditor v-model="summary"></WangEditor>
       <el-dialog :visible.sync="dialogVisible" append-to-body>
         <img width="100%" :src="dialogImageUrl" alt="">
       </el-dialog>
-      <!-- <el-upload action="https://jsonplaceholder.typicode.com/posts/" list-type="picture-card"
-        :on-preview="handlePictureCardPreview" :on-remove="handleRemove">
-        <i class="el-icon-plus"></i>
-      </el-upload>
-      <el-dialog :visible.sync="dialogVisible">
-        <img width="100%" :src="dialogImageUrl" alt="">
-      </el-dialog> -->
       <span slot="footer" class="dialog-footer" v-show="!isRead">
         <el-button @click="uploadDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="submitWork">提 交</el-button>
@@ -89,21 +115,25 @@
   </div>
 </template>
 <script>
-import { homeworkList,homeworkSaveOrUpdate } from "@/api/homework/index";
+
+import { homeworkList, homeworkSaveOrUpdate } from "@/api/homework/index";
 import { messageWarn, notifyFail } from "@/utils/util";
 import HomeworkModal from "./homeworkModal.vue";
 import { uploadData } from '@/api/upload-data'
+import { schoolStages } from '@/const/grade'
+import WangEditor from '@/components/wangEditor/index.vue'
 export default {
-  components: { HomeworkModal },
+  components: { HomeworkModal,WangEditor },
   name: "HomeworkIndex",
   watch:
   {
-    uploadDialogVisible:{
-      handler(val)
-      {
-        if(!val)
-        {
-          this.fileList = []
+    uploadDialogVisible: {
+      handler(val) {
+        if (!val) {        
+          this.imageList=[],
+          this.audioUrl='',
+          this.videoUrl='',
+          this.summary=''
         }
       }
     }
@@ -112,29 +142,77 @@ export default {
     return {
       showModal: false,
       dialogVisible: false,
+      isSuspend: true,
       dialogImageUrl: '',
       currentData: {},
       total: 0,
       loading: true,
       isLastPage: false,
+      summary: '',
       query: {
         page: 0,
         size: 10,
+        type:'0',
+        studentId:this.$store.state.user.userInfo.id,
+        stage: null,
         courseName: null,
+        date: null,
         grade: null,
         title: null,
+        status: null
       },
-      isRead:false,
+      isRead: false,
       list: [],
-      fileList: [],
+      imageList: [],
+      audioUrl: '',
+      videoUrl: '',
+      loadingAudio: false,
+      loadingVideo: false,
       uploadDialogVisible: false, // 控制上传对话框的显示状态
       uploadedFiles: [], // 存储已上传的文件
+      stageOptions: [{
+        value: '小学',
+        label: '小学'
+      }, {
+        value: '初中',
+        label: '初中'
+      }, {
+        value: '高中',
+        label: '高中'
+      }
+      ],
+      gradeOptions: [],
+      courseOptions: [],
     };
   },
   created() {
     this.getList();
   },
   methods: {
+    changeStage(e) {
+      console.log('e', e)
+      this.query.grade = null
+      this.query.courseName = null
+      this.gradeOptions = []
+      this.courseOptions = []
+      this.gradeOptions = schoolStages.find(item => item.stage === e).grades.map(item => {
+        return {
+          value: item.yearName,
+          label: item.yearName
+        }
+      })
+    },
+    changeGrade(e) {
+      this.query.courseName = null
+      this.courseOptions = []
+      this.courseOptions = Object.keys(schoolStages.find(item => item.stage === this.query.stage).grades.find(item => item.yearName === e).courses).map(item => {
+        return {
+          value: item,
+          label: item
+        }
+      })
+      console.log('first', this.courseOptions)
+    },
     submitForm() {
       this.query.page = 0;
       this.getList();
@@ -143,6 +221,9 @@ export default {
       this.query.courseName = null;
       this.query.grade = null;
       this.query.title = null;
+      this.query.date = null;
+      this.query.status = null;
+      this.query.stage = null;
       this.getList();
     },
     getList() {
@@ -233,30 +314,30 @@ export default {
       this.currentData = newData;
       this.$refs.homeworkRef.initData(newData);
     },
-    lookSubmitDetail(data)
-    {
-      this.showModal=false
-      if(data.status!="1")
-      {
+    lookSubmitDetail(data) {
+      this.showModal = false
+      if (data.status != "1") {
         this.$message({
           message: this.$t("作业未提交,不能查看"),
           type: "warning",
         });
         return;
       }
-      this.isRead=true
-      let remark=''
+      this.isRead = true
+      let remark = ''
       try {
-        remark=JSON.parse(data.remark)
-      } catch (error) {     
+        remark = JSON.parse(data.remark)
+      } catch (error) {
       }
-      this.fileList=remark.flies
-      this.uploadDialogVisible=true
+      this.imageList = remark.imageList
+      this.audioUrl = remark.audioUrl
+      this.videoUrl = remark.videoUrl
+      this.summary = remark.summary
+      this.uploadDialogVisible = true
     },
     openUploadDialog(data) {
-      this.isRead=false
-      if(data.status=="1")
-      {
+      this.isRead = false
+      if (data.status == "1") {
         this.$message({
           message: this.$t("作业已提交,不能重复提交"),
           type: "warning",
@@ -273,6 +354,24 @@ export default {
     handleChange(file, fileList) {
       // 可以根据需求处理文件变化（如：验证文件类型和大小）
     },
+    beforeUploadAudio(file) {
+      this.loadingAudio = true;
+      // 文件类型进行判断
+      const isAudio = file.name.substring(file.name.length - 3) === "mp3";
+      // const isAudio = file.type === "audio/mp3" || file.type === "audio/mpeg";
+      // 限制上传文件大小 500M
+      const isLt2M = file.size / 1024 / 1024 < 500;
+      if (!isAudio) {
+        this.$message.error("上传文件只能是Mp3格式!");
+        this.loadingAudio = false;
+      } else {
+        if (!isLt2M) {
+          this.$message.error("上传文件大小不能超过 2MB!");
+          this.loadingAudio = false;
+        } 
+      }
+      return isAudio && isLt2M 
+    },
     downloadFile(file) {
       // 下载文件的逻辑
       const url = "https://jsonplaceholder.typicode.com/posts/" + file.name;
@@ -282,41 +381,92 @@ export default {
       // 提交作业的逻辑
       let resData = { ...this.currentData };
       let remark = JSON.parse(resData.remark); // 将 remark 解析为对象
-      if(this.fileList.length === 0)
-      {
-        messageWarn(this, this.$t("请上传照片"));
+      if (this.imageList.length === 0&&this.audioUrl===''&&this.videoUrl==='') {
+        messageWarn(this, this.$t("请上传作业文件"));
         return;
       }
-      remark.flies = this.fileList; // 将上传的文件添加到 remark 对象中
+      remark.imageList = this.imageList.map(item=>{
+        return{
+          name:item.attachName,
+          url:item.url,
+          type:item.attachType
+        }
+      }) // 将上传的文件添加到 remark 对象中
+      remark.audioUrl = this.audioUrl;
+      remark.videoUrl = this.videoUrl;
+      remark.summary = this.summary;
       resData.remark = JSON.stringify(remark);
       resData.status = "1"; // 作业状态为已提交
-      console.log('resData', resData)
-      homeworkSaveOrUpdate(resData).then(res=>{
-         this.$message.success('提交成功')
-         this.getList()
-      }).catch(err=>{
+      homeworkSaveOrUpdate(resData).then(res => {
+        this.$message.success('提交成功')
+        this.getList()
+      }).catch(err => {
         this.$message.error('提交失败')
-      }).finally(()=>{
+      }).finally(() => {
         this.uploadDialogVisible = false; // 关闭对话框
         this.fileList = []; // 清空上传文件列表
       })
-     
+
 
       // 进一步处理提交逻辑
+    },
+    handleUploadAudio(file)
+    {
+      const formData = new FormData();
+      formData.append("file", file.file);
+      uploadData(formData).then((resp) => {
+        this.audioUrl = resp.data.result.url;
+        console.log('first', this.audioUrl)
+        this.loadingAudio = false;
+      }).catch((e) => {
+        this.$message.error(e.message);
+        this.loadingAudio = false;
+      })
+    },
+    handleRemoveAudio() {
+      this.audioUrl = '';
     },
     handleUpload(file) {
       const formData = new FormData();
       formData.append("file", file.file);
       uploadData(formData).then((resp) => {
-        this.fileList.push(resp.data.result);
+        this.imageList.push(resp.data.result);
       }).catch((e) => {
         this.$message.error(e.message);
       })
     },
+    beforeUploadVideo(file)
+    {
+      this.loadingVideo = true;
+      const isLt500M = file.size / 1024 / 1024 < 500;
+      if (!isLt500M) {
+        this.$message.error("上传文件大小不能超过 500MB!");
+        this.loadingVideo = false;
+      }
+      this.loadingVideo = false;
+      return isLt500M;
+    },
+    handleUploadVideo(file)
+    {
+      const formData = new FormData();
+      formData.append("file", file.file);
+      uploadData(formData).then((resp) => {
+        this.videoUrl = resp.data.result.url;
+      }).catch((e) => {
+        this.$message.error(e.message);
+      })
+    },
+    handleRemoveVideo()
+    {
+      this.videoUrl = '';
+    },
     handlePreview(file) {
       this.dialogImageUrl = file.url;
       this.dialogVisible = true;
-    }
+    },
+    handleRemove(file, fileList) {
+      this.imageList = fileList;
+    },
   },
 };
 </script>
@@ -371,7 +521,6 @@ export default {
   .single-popular-course {
     width: calc((100% - 120px) / 5);
     box-sizing: border-box;
-    position: relative;
     margin: 0 12px 12px 0;
     border-radius: 6px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
@@ -386,7 +535,6 @@ export default {
       background-size: cover;
       background-color: #f0f0f0;
       background-position: 49% 38%;
-      height: 172px;
       display: block;
       border-radius: 6px 6px 0 0;
     }
