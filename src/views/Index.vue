@@ -20,9 +20,8 @@
                   <el-menu-item index="/exams" @click="open('/exams')">{{ $t('examination') }}</el-menu-item>
                   <el-menu-item index="/courses" @click="open('/courses')">{{ $t('course') }}</el-menu-item>
                   <el-menu-item index="/homework" @click="open('/homework')">{{ $t('homework') }}</el-menu-item>
-                  <el-menu-item index="/preview" >{{ $t('preview') }}</el-menu-item>
+                  <el-menu-item index="/preview" @click="open('/preview')">{{ $t('preview') }}</el-menu-item>
                   <el-menu-item index="/wrongQuestion" >{{ $t('wrongQuestion') }}</el-menu-item>
-                  <el-menu-item index="/remedial" >{{ $t('remedial') }}</el-menu-item>
                   <el-menu-item index="/exam-record" @click="open('/exam-record')">{{$t('exam.records.records')}}</el-menu-item>
                   <el-menu-item index="u-admin" @click="openAdmin()">{{$t('header.admin')}}</el-menu-item>
                   <el-submenu v-if="login" index="/user-info">

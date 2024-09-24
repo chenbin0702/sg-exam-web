@@ -61,6 +61,7 @@
 
 <script>
 import WangEditor from '@/components/wangEditor/index.vue'
+//todo
 export default {
   components: {
     WangEditor

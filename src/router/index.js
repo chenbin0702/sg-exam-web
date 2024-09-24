@@ -104,6 +104,14 @@ export const constantRouterMap = [
         path: '/homework',
         name: 'homework',
         component: () => import('@/views/homework/index')
+      },
+      {
+        path:'/preview',
+        name:'preview',
+        component:()=>import('@/views/preview/index.vue')
+      },
+      {
+        path:'/w',
       }
     ]
   },

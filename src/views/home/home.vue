@@ -99,7 +99,9 @@
                 </div>
                 <div class="course-fee h-100">
                   <a href="#"
-                     class="free">{{ course.chargeType === 0 ? $t('exam.course.free') : '$' + course.chargePrice }}</a>
+                     class="free">{{
+                      course.chargeType === 0 ? $t('exam.course.free') : '$' + course.chargePrice
+                    }}</a>
                 </div>
               </div>
             </div>
